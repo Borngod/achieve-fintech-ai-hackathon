@@ -1,6 +1,7 @@
 "use client";
 import useStoreLogin from "@/store";
 import { Battery, Eye, EyeOff, HelpCircle, Signal, Wifi } from "lucide-react";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 export default function LoginSignup() {
@@ -14,6 +15,7 @@ export default function LoginSignup() {
         setPassword,
         toggleShowPassword
     } = useStoreLogin();
+      const router = useRouter();
 
     return (
         <div className="bg-white flex flex-row justify-center w-full">
@@ -116,7 +118,7 @@ export default function LoginSignup() {
                         </div>
 
                         {/* Continue Button */}
-                        <button className="flex h-[45px] items-center justify-center gap-2.5 px-2.5 py-6 relative self-stretch w-full bg-[#1266d4] rounded-[10px] hover:bg-[#0d5bbf]">
+                        <button onClick={()=>router.push('/home')} className="flex h-[45px] items-center justify-center gap-2.5 px-2.5 py-6 relative self-stretch w-full bg-[#1266d4] rounded-[10px] hover:bg-[#0d5bbf]">
                             <span
                                 className="relative font-semibold text-[#fcfcfc] text-lg tracking-[0] leading-normal"
                                 style={{
