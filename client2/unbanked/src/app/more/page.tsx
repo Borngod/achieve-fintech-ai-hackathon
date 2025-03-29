@@ -1,6 +1,7 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
 import { Home as HomeIcon, DollarSign, MoreHorizontal } from "lucide-react";
+import DashboardCards from "@/components/more/MoreCards";
 
 const More = () => {
   const router = useRouter();
@@ -13,11 +14,7 @@ const More = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center">
-        <h1 className="text-2xl font-semibold text-[#250537]">
-          This is the More page
-        </h1>
-      </div>
+      <DashboardCards />
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center h-16">
