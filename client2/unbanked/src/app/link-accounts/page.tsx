@@ -1,7 +1,8 @@
 "use client";
 
+import { useTransactionsStore } from "@/store/transactionsStore";
 import { ChevronLeft, ChevronDown } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 
 type Account = { name: string; id: string };
 type Transaction = {
@@ -13,17 +14,23 @@ type Transaction = {
   currency: string;
 };
 
+const truncateText = (text: string, maxLength: number) =>
+  text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+
 export default function LinkAccounts() {
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [linkedAccounts, setLinkedAccounts] = useState<Account[]>([]);
   const [showTransactions, setShowTransactions] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Use Zustand store
+  const { transactions, transformedData, setTransactions, setTransformedData } =
+    useTransactionsStore();
+
   const openMonoWidget = useCallback(async () => {
-        // @ts-ignore
+    //@ts-ignore
     const MonoConnect = (await import("@mono.co/connect.js")).default;
 
     const monoInstance = new MonoConnect({
@@ -41,7 +48,7 @@ export default function LinkAccounts() {
           if (data.accountId) {
             setLinkedAccounts((prev) => [
               ...prev,
-              { name: "Linked Account", id: data.accountId }, // You could fetch account name separately
+              { name: "Linked Account", id: data.accountId },
             ]);
           }
         } catch (error) {
@@ -54,17 +61,48 @@ export default function LinkAccounts() {
     monoInstance.open();
   }, []);
 
+  const transformTransactions = (transactions: Transaction[], userXId: string = "user_x_id") => {
+    const transactionDates = transactions.map((t) => t.date);
+    const sendReceive = transactions.map((t) => (t.type === "debit" ? 1 : 0));
+    const totalAmountSent = transactions
+      .filter((t) => t.type === "debit")
+      .reduce((sum, t) => sum + t.amount / 100, 0);
+    const totalAmountReceived = transactions
+      .filter((t) => t.type === "credit")
+      .reduce((sum, t) => sum + t.amount / 100, 0);
+
+    const numberOfSendsToUserX = transactions.filter(
+      (t) => t.type === "debit" && t.narration.includes(userXId)
+    ).length;
+
+    const earliestDate = new Date(Math.min(...transactionDates.map((d) => new Date(d).getTime())));
+    const latestDate = new Date(Math.max(...transactionDates.map((d) => new Date(d).getTime())));
+    const weeksDiff = (latestDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24 * 7);
+    const frequency = weeksDiff > 0 ? transactions.length / weeksDiff : transactions.length;
+
+    return {
+      transactionDates,
+      sendReceive,
+      frequency,
+      totalAmountSent,
+      totalAmountReceived,
+      numberOfSendsToUserX,
+    };
+  };
+
   const fetchTransactions = useCallback(async (accountId: string) => {
     setLoading(true);
     try {
       const response = await fetch(`/api/transactions/${accountId}`);
       const data = await response.json();
-      setTransactions(data);
+      setTransactions(data); // Update Zustand store
+      const transformed = transformTransactions(data);
+      setTransformedData(transformed); // Update Zustand store
     } catch (error) {
       console.error("Error fetching transactions:", error);
     }
     setLoading(false);
-  }, []);
+  }, [setTransactions, setTransformedData]);
 
   const handleActionsClick = (account: Account) => {
     setSelectedAccount(account);
@@ -79,72 +117,96 @@ export default function LinkAccounts() {
   };
 
   return (
-    <div className="p-4">
-      <button
-        className="mb-2 text-gray-700 font-semibold flex items-center"
-        onClick={() => window.history.back()}
-      >
-        <ChevronLeft size={28} className="mr-2" />
-      </button>
-
-      <h2 className="text-xl font-semibold mt-4">Manage External Accounts</h2>
-      <p className="text-gray-600 text-sm mb-6 mt-4">
-        Add and remove external accounts to enable faster and instant Unbanked scoring.
-      </p>
-
-      <button onClick={() => openMonoWidget()} className="bg-blue-600 text-white px-4 py-2 rounded-md mb-4">
-        + Add Account
-      </button>
-
-      {!showTransactions && linkedAccounts.length > 0 && (
-        <div className="mt-4">
-          {linkedAccounts.map((account, index) => (
-            <div
-              key={index}
-              className="border border-gray-300 bg-gray-100 p-3 rounded-md flex justify-between items-center mb-2"
-            >
-              <p className="text-base font-medium">{account.name}</p>
-              <button
-                className="border border-gray-300 rounded-md px-2 py-1 flex items-center gap-1 text-gray-700"
-                onClick={() => handleActionsClick(account)}
-              >
-                Actions <ChevronDown size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showTransactions && selectedAccount && (
-        <div className="mt-4">
+    <div className="p-4 min-h-screen">
+      {!showTransactions ? (
+        <>
           <button
-            className="mb-4 text-gray-700 font-semibold flex items-center"
-            onClick={() => setShowTransactions(false)}
+            className="mb-2 text-gray-700 font-semibold flex items-center"
+            onClick={() => window.history.back()}
           >
-            <ChevronLeft size={28} className="mr-2" /> Back to Accounts
+            <ChevronLeft size={28} className="mr-2" />
           </button>
-          <h3 className="text-lg font-semibold mb-4">{selectedAccount.name} Transactions</h3>
-          {loading ? (
-            <p>Loading transactions...</p>
-          ) : transactions.length > 0 ? (
-            <div className="space-y-2">
-              {transactions.map((transaction) => (
-                <div key={transaction._id} className="border border-gray-300 p-3 rounded-md">
-                  <div className="flex justify-between">
-                    <span>{transaction.narration}</span>
-                    <span className={transaction.type === "debit" ? "text-red-600" : "text-green-600"}>
-                      {transaction.type === "debit" ? "-" : "+"}
-                      {(transaction.amount / 100).toFixed(2)} {transaction.currency}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {new Date(transaction.date).toLocaleDateString()}
-                  </div>
+
+          <h2 className="text-xl font-semibold mt-4">Manage External Accounts</h2>
+          <p className="text-gray-600 text-sm mb-6 mt-4">
+            Add and remove external accounts to enable faster and instant Unbanked scoring.
+          </p>
+
+          <button onClick={() => openMonoWidget()} className="bg-blue-600 text-white px-4 py-2 rounded-md mb-4">
+            + Add Account
+          </button>
+
+          {linkedAccounts.length > 0 && (
+            <div className="mt-4">
+              {linkedAccounts.map((account, index) => (
+                <div
+                  key={index}
+                  className="border border-gray-300 bg-gray-100 p-3 rounded-md flex justify-between items-center mb-2"
+                >
+                  <p className="text-base font-medium">{account.name}</p>
+                  <button
+                    className="border border-gray-300 rounded-md px-2 py-1 flex items-center gap-1 text-gray-700"
+                    onClick={() => handleActionsClick(account)}
+                  >
+                    Actions <ChevronDown size={16} />
+                  </button>
                 </div>
               ))}
             </div>
+          )}
+        </>
+      ) : (
+        <div className="flex flex-col h-full">
+          <div className="flex items-center mb-4">
+            <button
+              className="text-gray-700 font-semibold flex items-center"
+              onClick={() => setShowTransactions(false)}
+            >
+              <ChevronLeft size={28} className="mr-2" /> Back to Accounts
+            </button>
+          </div>
+
+          <h3 className="text-lg font-semibold mb-4">{selectedAccount?.name} Transactions</h3>
+          {loading ? (
+            <p className="text-gray-600">Loading transactions...</p>
+          ) : transactions.length > 0 ? (
+            <div className="flex-1 overflow-y-auto">
+              {transformedData && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg mb-4">
+                  <h4 className="text-md font-semibold mb-2">Transaction Summary</h4>
+                  <p>Total Sent: GHS {transformedData.totalAmountSent.toFixed(2)}</p>
+                  <p>Total Received: GHS {transformedData.totalAmountReceived.toFixed(2)}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-4">
+                {transactions.map((transaction) => (
+                  <div
+                    key={transaction._id}
+                    className="border border-gray-200 p-4 rounded-lg shadow-sm bg-white"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium text-gray-800">
+                        {truncateText(transaction.narration, 15)}
+                      </span>
+                      <span
+                        className={`font-semibold whitespace-nowrap ${
+                          transaction.type === "debit" ? "text-red-600" : "text-green-600"
+                        }`}
+                      >
+                        {transaction.type === "debit" ? "- " : "+ "}
+                        GHS {(transaction.amount / 100).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {new Date(transaction.date).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
-            <p>No transactions found.</p>
+            <p className="text-gray-600">No transactions found.</p>
           )}
         </div>
       )}
