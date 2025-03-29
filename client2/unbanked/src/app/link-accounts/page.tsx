@@ -54,6 +54,7 @@ export default function LinkAccounts() {
               ...prev,
               { name: "Linked Account", id: data.accountId },
             ]);
+            fetchTransactions(data.accountId);
           }
         } catch (error) {
           console.error("Error linking account:", error);
@@ -148,7 +149,7 @@ Return in JSON format: { "score": number, "category": string, "confidenceRange":
   const handleViewTransactions = (account: Account) => {
     setSelectedAccount(account);
     setShowBottomSheet(false);
-    fetchTransactions(account.id);
+    // fetchTransactions(account.id);
     setShowTransactions(true);
   };
 
