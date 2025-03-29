@@ -6,11 +6,15 @@ import {
   CreditCard,
   DollarSign,
 } from "lucide-react";
+import CreditScore from "./credit-score";
 
 const OverviewCard = () => {
   // Sample data (replace with real data from your app/store)
   const balance = "500.00"; // Example balance
-  const score = "85"; // Example unbanked score
+ 
+
+  const currentScore = 0; 
+  const totalScore = 850;
 
   // Split balance into main amount and decimal part
   const [mainAmount, decimalPart] = balance.split(".");
@@ -34,49 +38,47 @@ const OverviewCard = () => {
         </div>
 
         {/* Right: Score */}
-        <div className="flex items-center justify-center h-12 w-12 rounded-full bg-[#A3CFFA]">
-          <span className="text-lg font-bold text-white">{score}</span>
-        </div>
+        <CreditScore totalScore={totalScore} currentScore={currentScore}/>
       </div>
 
       {/* Second Row */}
       <div className="grid grid-cols-5 gap-2">
         {/* Send */}
         <div className="flex flex-col items-center">
-          <div className="p-2 bg-white rounded-full">
-            <Send className="h-5 w-5 text-[#1266D4]" />
+          <div className="p-2 bg-[rgba(37, 118, 225, 0.50)] rounded-full shadow-md shadow-black/45">
+            <Send className="h-5 w-5 text-white" />
           </div>
           <span className="text-xs mt-1">Send</span>
         </div>
 
         {/* Add */}
         <div className="flex flex-col items-center">
-          <div className="p-2 bg-white rounded-full">
-            <Plus className="h-5 w-5 text-[#1266D4]" />
+          <div className="p-2 bg-[rgba(37, 118, 225, 0.50)] rounded-full shadow-md shadow-black/45">
+            <Plus className="h-5 w-5 text-white" />
           </div>
           <span className="text-xs mt-1">Add</span>
         </div>
 
         {/* Wallet */}
         <div className="flex flex-col items-center">
-          <div className="p-2 bg-white rounded-full">
-            <Wallet className="h-5 w-5 text-[#1266D4]" />
+          <div className="p-2 bg-[rgba(37, 118, 225, 0.50)] rounded-full shadow-md shadow-black/45">
+            <Wallet className="h-5 w-5 text-white" />
           </div>
           <span className="text-xs mt-1">Wallet</span>
         </div>
 
         {/* Top-Up */}
         <div className="flex flex-col items-center">
-          <div className="p-2 bg-white rounded-full">
-            <CreditCard className="h-5 w-5 text-[#1266D4]" />
+          <div className="p-2 bg-[rgba(37, 118, 225, 0.50)] rounded-full shadow-md shadow-black/45">
+            <CreditCard className="h-5 w-5 text-white" />
           </div>
           <span className="text-xs mt-1">Top-Up</span>
         </div>
 
         {/* Loan */}
         <div className="flex flex-col items-center">
-          <div className="p-2 bg-white rounded-full">
-            <DollarSign className="h-5 w-5 text-[#1266D4]" />
+          <div className="p-2 bg-[rgba(37, 118, 225, 0.50)] rounded-full shadow-md shadow-black/45">
+            <DollarSign className="h-5 w-5 text-white" />
           </div>
           <span className="text-xs mt-1">Loan</span>
         </div>

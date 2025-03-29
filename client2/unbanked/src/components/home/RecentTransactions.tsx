@@ -76,16 +76,13 @@ const RecentTransactions = () => {
                     {txn.receiverName}
                   </span>
                   <span className="text-sm font-medium text-gray-600">
-                    {txn.purpose}
+                    {txn.status}
                   </span>
                 </div>
               </div>
 
               {/* Right: Status + Amount + Date */}
               <div className="flex flex-col items-end gap-1">
-                <span className={`text-sm font-medium ${statusColor}`}>
-                  {txn.status}
-                </span>
                 <div className="flex items-baseline">
                   <span className="text-base font-semibold text-[#250537]">
                     {sign} GHS {mainAmount}
