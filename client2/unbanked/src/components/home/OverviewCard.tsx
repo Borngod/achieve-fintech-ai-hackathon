@@ -24,11 +24,11 @@ const OverviewCard = () => {
       <div className="flex justify-between items-start mb-6">
         {/* Left: Balance */}
         <div className="flex flex-col">
-          <span className="text-xs font-medium">Available Balance</span>
+          <span className="text-xs ">Available Balance</span>
           <div className="flex items-baseline">
-            <span className="text-2xl font-semibold">GHS {mainAmount}</span>
+            <span className="mt-2  font-semibold text-white text-[34.7px] tracking-[0] leading-normal">GHS {mainAmount}</span>
             {decimalPart && (
-              <span className="text-lg font-medium">.{decimalPart}</span>
+              <span className="text-lg font-[500] text-[22.7px]">.{decimalPart}</span>
             )}
           </div>
         </div>

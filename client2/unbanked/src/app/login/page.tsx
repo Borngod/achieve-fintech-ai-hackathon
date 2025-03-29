@@ -144,7 +144,7 @@ export default function LoginSignup() {
                 </div>
 
                 {/* Help Section */}
-                <div className="inline-flex items-end gap-[5px]">
+                <div className="flex-row items-start   gap-[5px] mt-2">
                     <HelpCircle className="relative w-6 h-6 text-[#1266d4]" />
                     <span
                         className="relative font-medium text-[#1266d4] text-lg tracking-[0] leading-normal"
