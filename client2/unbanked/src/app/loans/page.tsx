@@ -7,6 +7,7 @@ import LoanOverview from "@/components/loan/loan-overview";
 import BottomNavigation from "@/components/navigation/bottom-navigation";
 import FinancialCard from "@/components/loan/financial-success";
 import LoanTypes from "@/components/loan/loan-types";
+import Chatbot from "@/components/chatbot/bot";
 
 const Loans = () => {
 
@@ -25,6 +26,8 @@ const Loans = () => {
                     <div className="pt-5 px-4">
                       <LoanTypes/>
                     </div>
+                    <Chatbot/>
+
                    
             </div>
            
