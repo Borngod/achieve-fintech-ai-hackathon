@@ -6,7 +6,7 @@ import React from "react";
 export default function LoanOverview() {
     return (
         <Card className="w-full rounded-[15px] overflow-hidden border-0 [background:linear-gradient(216deg,rgba(10,53,110,1)_0%,rgba(19,103,212,1)_100%)]">
-            <CardContent className="p-6">
+            <CardContent className="">
                 <div className="flex items-start justify-between w-full">
                     <div className="flex flex-col items-start gap-1">
                         <span className="font-medium text-[#ffffffcc] text-[12px]">
