@@ -7,13 +7,15 @@ import {
   DollarSign,
 } from "lucide-react";
 import CreditScore from "./credit-score";
+import { useTransactionsStore } from "@/store/transactionsStore";
 
 const OverviewCard = () => {
+  const {creditScore} =useTransactionsStore();
   // Sample data (replace with real data from your app/store)
   const balance = "500.00"; // Example balance
  
 
-  const currentScore = 0; 
+  const currentScore = creditScore?.score; 
   const totalScore = 850;
 
   // Split balance into main amount and decimal part
@@ -38,7 +40,7 @@ const OverviewCard = () => {
         </div>
 
         {/* Right: Score */}
-        <CreditScore totalScore={totalScore} currentScore={currentScore}/>
+        <CreditScore totalScore={totalScore} currentScore={currentScore ?? 0}/>
       </div>
 
       {/* Second Row */}

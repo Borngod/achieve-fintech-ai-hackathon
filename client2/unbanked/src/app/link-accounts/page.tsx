@@ -2,7 +2,7 @@
 
 import { useTransactionsStore } from "@/store/transactionsStore";
 import { ChevronLeft, ChevronDown } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useState, useCallback } from "react";
 
 type Account = { name: string; id: string };
 type Transaction = {
@@ -25,9 +25,13 @@ export default function LinkAccounts() {
   const [showTransactions, setShowTransactions] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Use Zustand store
-  const { transactions, transformedData, setTransactions, setTransformedData } =
-    useTransactionsStore();
+  const {
+    transactions,
+    transformedData,
+    setTransactions,
+    setTransformedData,
+    setCreditScore,
+  } = useTransactionsStore();
 
   const openMonoWidget = useCallback(async () => {
     //@ts-ignore
@@ -61,48 +65,80 @@ export default function LinkAccounts() {
     monoInstance.open();
   }, []);
 
-  const transformTransactions = (transactions: Transaction[], userXId: string = "user_x_id") => {
-    const transactionDates = transactions.map((t) => t.date);
-    const sendReceive = transactions.map((t) => (t.type === "debit" ? 1 : 0));
-    const totalAmountSent = transactions
-      .filter((t) => t.type === "debit")
-      .reduce((sum, t) => sum + t.amount / 100, 0);
-    const totalAmountReceived = transactions
-      .filter((t) => t.type === "credit")
-      .reduce((sum, t) => sum + t.amount / 100, 0);
+  const fetchTransactions = useCallback(
+    async (accountId: string) => {
+      setLoading(true);
+      try {
+        // Fetch transaction data
+        const response = await fetch(`/api/transactions/${accountId}`);
+        const data = await response.json();
+        setTransactions(data);
 
-    const numberOfSendsToUserX = transactions.filter(
-      (t) => t.type === "debit" && t.narration.includes(userXId)
-    ).length;
+        // Transform transaction data
+        const transformed = {
+          transactionDates: data.map((t: Transaction) => t.date),
+          sendReceive: data.map((t: Transaction) => (t.type === "debit" ? 1 : 0)),
+          frequency: data.length / 1, // Simplified; adjust based on date range
+          totalAmountSent: data
+            .filter((t: Transaction) => t.type === "debit")
+            .reduce((sum: number, t: Transaction) => sum + t.amount / 100, 0),
+          totalAmountReceived: data
+            .filter((t: Transaction) => t.type === "credit")
+            .reduce((sum: number, t: Transaction) => sum + t.amount / 100, 0),
+          numberOfSendsToUserX: data.filter(
+            (t: Transaction) => t.type === "debit" && t.narration.includes("user_x_id")
+          ).length,
+        };
+        setTransformedData(transformed);
 
-    const earliestDate = new Date(Math.min(...transactionDates.map((d) => new Date(d).getTime())));
-    const latestDate = new Date(Math.max(...transactionDates.map((d) => new Date(d).getTime())));
-    const weeksDiff = (latestDate.getTime() - earliestDate.getTime()) / (1000 * 60 * 60 * 24 * 7);
-    const frequency = weeksDiff > 0 ? transactions.length / weeksDiff : transactions.length;
+        // Prepare prompt for Claude
+        const prompt = `
+Given a user’s transaction data:
+- Transaction Dates: [${transformed.transactionDates.join(", ")}]
+- Send/Receive: [${transformed.sendReceive.join(", ")}]
+- Frequency: ${transformed.frequency} transactions/week
+- Total Amount Sent: ${transformed.totalAmountSent} GHS
+- Total Amount Received: ${transformed.totalAmountReceived} GHS
+- Number of Sends to User X: ${transformed.numberOfSendsToUserX}
 
-    return {
-      transactionDates,
-      sendReceive,
-      frequency,
-      totalAmountSent,
-      totalAmountReceived,
-      numberOfSendsToUserX,
-    };
-  };
+Using a Bayesian Network, Gradient Boosting, HMM, and Isolation Forest:
+1. Calculate the repayment probability (0–1).
+2. Detect gaming (e.g., back-and-forth sends).
+3. Ensure fairness across user groups.
+4. Map to a 300–850 score with categories: Poor (300–579), Fair (580–669), Good (670–739), Very Good (740–799), Excellent (800–850).
+5. Provide a transparent explanation (e.g., ‘High sends to one user lowered your score’).
 
-  const fetchTransactions = useCallback(async (accountId: string) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/transactions/${accountId}`);
-      const data = await response.json();
-      setTransactions(data); // Update Zustand store
-      const transformed = transformTransactions(data);
-      setTransformedData(transformed); // Update Zustand store
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-    }
-    setLoading(false);
-  }, [setTransactions, setTransformedData]);
+Return in JSON format: { "score": number, "category": string, "confidenceRange": [number, number], "explanation": string }
+`;
+
+        // Call Claude via server-side proxy
+        const claudeResponse = await fetch("/api/claude", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt }),
+          });
+        if (!claudeResponse.ok) {
+            const errorText = await claudeResponse.text();
+            throw new Error(`Claude API request failed: ${claudeResponse.status} - ${errorText}`);
+          }
+      
+          const claudeData = await claudeResponse.json();
+          console.log("Claude raw response:", claudeData.response);
+          const result = JSON.parse(claudeData.response);
+        setCreditScore({
+          score: result.score,
+          category: result.category,
+          confidenceRange: result.confidenceRange,
+          explanation: result.explanation,
+        });
+      } catch (error) {
+        console.error("Error fetching transactions or computing score:", error);
+        setCreditScore(null); // Reset on error
+      }
+      setLoading(false);
+    },
+    [setTransactions, setTransformedData, setCreditScore]
+  );
 
   const handleActionsClick = (account: Account) => {
     setSelectedAccount(account);
